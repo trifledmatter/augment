@@ -8,11 +8,16 @@ import queue
 import sys
 import threading
 import time
+import subprocess
+
 from typing import Any
 
 import numpy
 import sounddevice
 import vosk
+import pyttsx3
+
+from text import Formatter
 
 
 class SpeechInputManager:
@@ -58,6 +63,12 @@ class SpeechInputManager:
 
         self.service_stream = None
         self.service_thread = None
+
+        self.synth_response_file = "response.txt"
+        self.synth_playback_process = None
+        self.synth_process_lock = threading.Lock()
+
+        self.fallback_voices = ["female", "zira"]
 
     def audio_callback(self, indata: bytes = None, status: Any = None) -> None:
         """
@@ -127,6 +138,76 @@ class SpeechInputManager:
             self.service_stream.close()
         if self.service_thread is not None:
             self.service_thread.join()
+
+    def synthesize(self, text: str = None, use_festival: bool = True) -> None:
+        """
+        Speaks the given text. Defaults to using Festival if available.
+        Falls back to pyttsx3 if needed. Make sure you have the required tools installed.
+        """
+        assert (
+            text is None
+        ), "sim - cannot synthesize nothing. Please provide text to synthesize."
+
+        text = Formatter(text).format()
+
+        if use_festival:
+            try:
+                with open(self.synth_response_file, "w", encoding="UTF-8") as f:
+                    f.write(text)
+
+                subprocess.run(
+                    [
+                        "text2wave",
+                        "-eval",
+                        "(voice_kal_diphone)",
+                        "-eval",
+                        "(Parameter.set 'Duration_Stretch 1)",
+                        "-eval",
+                        "(set! int_target_mean 130)",
+                        "response.txt",
+                        "-o",
+                        "response.wav",
+                    ],
+                    check=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+
+                with self.synth_process_lock:
+                    self.synth_playback_process = subprocess.Popen(
+                        ["aplay", "response.wav"],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+            except subprocess.CalledProcessError:
+                print(
+                    (
+                        "sim - could not synthesize voice with festival."
+                        "Please ensure you have aplay installed,"
+                        "and have followed the festival installation instructions."
+                    )
+                )
+            finally:
+                if os.path.exists(self.synth_response_file):
+                    os.remove(self.synth_response_file)
+
+            return
+
+        engine = pyttsx3.init()
+
+        voices = engine.getProperty("voices")
+        for voice in voices:
+            if any(fallback in voice.name.lower() for fallback in self.fallback_voices):
+                engine.setProperty("voice", voice.id)
+                break
+
+        engine.setProperty("rate", 150)
+        engine.setProperty("volume", 0.9)
+
+        engine.say(text)
+        engine.runAndWait()
+
+        return
 
     def _process_audio_queue(self):
         """
