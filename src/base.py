@@ -5,17 +5,16 @@ and conversation history config. Uses Groq and AsyncGroq clients.
 
 import base64
 import os
-import sys
-
 import random
+import sys
+from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional
-from datetime import timedelta, datetime
 
 from groq import APIError, AsyncGroq, BadRequestError, Groq
 
-from history import CompletionHistory
 from errors.model import ModelError
+from history import CompletionHistory
 
 
 class AvailableGroqModels(Enum):
@@ -42,7 +41,7 @@ class Model:
         history_directory: str = "conversations",
         history_interval_hours: int = 6,
         llm_model: str = AvailableGroqModels.DEFAULT,
-    ):
+    ) -> None:
         """
         Sets up the model client. Exits hard if the API key isn't set.
 
@@ -241,7 +240,7 @@ class Model:
             print(f"API error occurred: {e}")
             return None
 
-    def ask(self, text: str = None):
+    def ask(self, text: str = None) -> str:
         """
         Handles user input, checks history for similar requests, and generates responses.
 
@@ -312,25 +311,25 @@ class Model:
                 self.history.save()
                 return found_answer
 
-            # otherwise, we haven't found the question or answer
-            response = random.choice(
-                [
-                    "I’m not sure about that one. Want me to generate an answer?",
-                    "I don’t know yet... should I look it up for you?",
-                    "Hmm, I don’t have that info right now. Want me to figure it out?",
-                    "I’m not sure off the top of my head. Should I try generating an answer?",
-                    "Good question! I don’t know yet—want me to dive in and generate something?",
-                    "I don’t have the answer handy. Should I find or generate it for you?",
-                    "I’m blanking on this one... want me to take a shot at generating an answer?",
-                    "Not sure yet. Should I look into it and generate a response?",
-                ]
-            )
+        # otherwise, we haven't found the question or answer
+        response = random.choice(
+            [
+                "I’m not sure about that one. Want me to generate an answer?",
+                "I don’t know yet... should I look it up for you?",
+                "Hmm, I don’t have that info right now. Want me to figure it out?",
+                "I’m not sure off the top of my head. Should I try generating an answer?",
+                "Good question! I don’t know yet—want me to dive in and generate something?",
+                "I don’t have the answer handy. Should I find or generate it for you?",
+                "I’m blanking on this one... want me to take a shot at generating an answer?",
+                "Not sure yet. Should I look into it and generate a response?",
+            ]
+        )
 
-            self.history.conversation_history.append(
-                {"role": "assistant", "content": response}
-            )
+        self.history.conversation_history.append(
+            {"role": "assistant", "content": response}
+        )
 
-            self.history.save()
+        self.history.save()
 
-            self.model_awaiting_confirmation = True
-            return response
+        self.model_awaiting_confirmation = True
+        return response

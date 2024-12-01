@@ -3,12 +3,12 @@ Handles conversation history. Add stuff, load stuff, search stuff, clear stuff.
 Uses JSON files to store everything, since this'll all be running local anyway
 """
 
-import os
 import json
+import os
 from datetime import datetime, timedelta
+from difflib import get_close_matches
 from pathlib import Path
 from typing import List, Optional, Union
-from difflib import get_close_matches
 
 
 class CompletionHistory:
