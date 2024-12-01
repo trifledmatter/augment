@@ -1,12 +1,2 @@
 .env
 ./venv/
-
-
-dotenv
-sounddevice
-numpy
-beautifulsoup4
-vosk
-groq
-redis
-black
