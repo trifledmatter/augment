@@ -24,11 +24,13 @@ Think of this as less of a polished product and more of a playground to see just
 
 ## About
 
-This project is my experimental sandbox for creating a voice-driven AI assistant. It’s not trying to be the next Alexa or Siri—it’s more like a tinkering buddy that listens to you, answers your questions, and maybe, just maybe, runs a system command or two without blowing up your machine.
+This project is a playground, not a polished product. It uses Vosk for speech-to-text, a conversational AI backend for generating responses, and pyttsx3 for its best attempt at sounding human. It’s ambitious, experimental, and probably a little overengineered.
 
-It uses **Vosk** for speech recognition, a custom conversational AI backend for generating responses, and **pyttsx3** for that lovely robotic voice output. Oh, and it can (or will eventually) run system commands, consult cached data, and even handle images and tools dynamically. Ambitious? Sure. Overengineered? Probably.
+What can it do? Well, it listens to you, tries to answer your questions, and eventually, it’ll be able to:
 
-This is all just a big experiment. Expect bugs, rough edges, and probably a few moments where it gets confused and just says, “Hmm, I don’t know.”
+    Run system commands (like opening files or automating tasks).
+    Handle tools and images dynamically.
+    Switch between different operational modes (more on that below).
 
 ---
 
