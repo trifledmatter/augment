@@ -11,10 +11,14 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from dotenv import load_dotenv
 from groq import APIError, AsyncGroq, BadRequestError, Groq
 
 from errors.model import ModelError
 from history import CompletionHistory
+
+
+load_dotenv()
 
 
 class AvailableGroqModels(Enum):
@@ -56,7 +60,11 @@ class Model:
             print(ModelError.NO_API_KEY)
             sys.exit(1)  # Hard exit, no API key = no fun
 
-        self.client: Groq | AsyncGroq = Groq() if not asynchronous else AsyncGroq()
+        self.client: Groq | AsyncGroq = (
+            Groq(api_key=self.api_key)
+            if not asynchronous
+            else AsyncGroq(api_key=self.api_key)
+        )
 
         self.model = llm_model
         self.history_directory = history_directory
@@ -222,12 +230,17 @@ class Model:
                     }
                 )
 
-            response = self.client.chat.completions.create(
-                messages=messages,
-                model=self.model.value,
-                tools=prepared_tools if prepared_tools else None,
-                tool_choice="auto" if prepared_tools else None,
-            )
+            if tools:
+                response = self.client.chat.completions.create(
+                    messages=messages,
+                    model=self.model.value,
+                    tools=prepared_tools if prepared_tools else None,
+                    tool_choice="auto" if prepared_tools else None,
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    messages=messages, model=self.model.value
+                )
 
             if response.choices and response.choices[0].message:
                 return response.choices[0].message.content.strip()
@@ -252,8 +265,7 @@ class Model:
         - Searches conversation history for similar inputs and reuses answers if found.
         - If no history match, offers to generate a new answer and sets confirmation state.
         """
-
-        assert text is None, "Model.ask() was called without input."
+        assert text is not None, "Model.ask() was called without input."
 
         if (
             self.history.updated_at

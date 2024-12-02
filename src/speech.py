@@ -7,7 +7,7 @@ import os
 import queue
 import sys
 import threading
-import time
+import time as t
 import subprocess
 
 from typing import Any
@@ -27,7 +27,7 @@ class SpeechInputManager:
 
     def __init__(
         self,
-        model: str = "models/small",
+        model: str = "src/models/model/",
         sample_rate: int = 16000,
         threshold: int = -30,
         silence_timeout: float = 1.0,
@@ -38,10 +38,11 @@ class SpeechInputManager:
         """
         Initializes the speech input manager.
         """
-        assert not os.path.exists(model), (
-            f"vosk - model was not unpacked at path src/{model}"
-            "download a model from here -> https://alphacephei.com/vosk/models"
-        )
+        if not os.path.exists(model):
+            raise FileNotFoundError(
+                f"vosk - model was not found at path {model}. "
+                "Download a model from here -> https://alphacephei.com/vosk/models"
+            )
 
         self.model = model
         self.threshold = threshold
@@ -58,8 +59,8 @@ class SpeechInputManager:
         self.transcribing = False
         self.last_sound_time = 0
 
-        self.service = vosk.Model(model)
-        self.recognizer = vosk.KaldiRecognizer(model, sample_rate)
+        self.service = vosk.Model(self.model)
+        self.recognizer = vosk.KaldiRecognizer(self.service, sample_rate)
 
         self.service_stream = None
         self.service_thread = None
@@ -70,7 +71,9 @@ class SpeechInputManager:
 
         self.fallback_voices = ["female", "zira"]
 
-    def audio_callback(self, indata: bytes = None, status: Any = None) -> None:
+    def audio_callback(
+        self, indata: bytes = None, frames=None, time=None, status: Any = None
+    ) -> None:
         """
         Processes incoming audio and handles transcription triggers.
         """
@@ -82,7 +85,7 @@ class SpeechInputManager:
         rms = numpy.sqrt(numpy.mean(audio.astype(numpy.float32) ** 2))
         decibels = 20 * numpy.log10(rms) if rms > 0 else -numpy.inf
 
-        current_time = time.time()
+        current_time = t.time()
 
         if decibels > self.threshold:
             self.last_sound_time = current_time
@@ -145,7 +148,7 @@ class SpeechInputManager:
         Falls back to pyttsx3 if needed. Make sure you have the required tools installed.
         """
         assert (
-            text is None
+            text is not None
         ), "sim - cannot synthesize nothing. Please provide text to synthesize."
 
         text = Formatter(text).format()
@@ -225,6 +228,7 @@ class SpeechInputManager:
                     if self.recognizer.AcceptWaveform(data):
                         result = self.recognizer.Result()
                         text = json.loads(result).get("text", "")
+
                         if text and self.on_speech_create:
                             self.on_speech_create(text)
                     else:
@@ -234,6 +238,6 @@ class SpeechInputManager:
                             self.on_partial_create(text)
             except queue.Empty:
                 continue
-            except Exception:
-                print("sim - an error occured in processing thread")
+            except Exception as e:
+                print(e)
                 break

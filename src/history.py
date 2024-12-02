@@ -53,7 +53,6 @@ class CompletionHistory:
         self.updated_at: datetime = None
         self.current_history_file: Optional[str] = None
         self.conversation_history: List[dict] = []
-        self.next_id: int = 0
 
         self.timestamp_file = os.path.join(self.history_directory, "h.timestamp")
         self.last_history_time: Optional[datetime] = None
@@ -137,7 +136,6 @@ class CompletionHistory:
         self.conversation_history = []
         self.current_history_file = None
         self.updated_at = datetime.now()
-        self.next_id = 0
 
     def load_recent_conversations(self) -> None:
         """
@@ -162,10 +160,10 @@ class CompletionHistory:
         for file in files_to_load:
             with open(file, "r", encoding="UTF-8") as f:
                 self.conversation_history.extend(json.load(f))
-        if self.conversation_history:
-            self.next_id = max(entry["id"] for entry in self.conversation_history) + 1
-        else:
-            self.next_id = 0
+        # if self.conversation_history:
+        #     self.next_id = max(entry["id"] for entry in self.conversation_history) + 1
+        # else:
+        #     self.next_id = 0
         if self.debug:
             print(f"history - loaded {len(self.conversation_history)} conversations")
 

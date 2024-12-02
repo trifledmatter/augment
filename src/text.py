@@ -16,7 +16,7 @@ class Formatter:
         """
         Sets up the formatter. Needs text to do anything useful.
         """
-        assert text is None, "formatter - text must be provided in order to format"
+        assert text is not None, "formatter - text must be provided in order to format"
 
         self.text = text
 
@@ -25,7 +25,7 @@ class Formatter:
         Strips markdown down to plain text. Deals with code, links, headers, etc.
         Not perfect, but gets the job done.
         """
-        assert self.text is None, "formatter - text must be provided in order to format"
+        assert self.text is not None, "formatter - text must be provided in order to format"
 
         md = markdown.markdown(self.text)
 
